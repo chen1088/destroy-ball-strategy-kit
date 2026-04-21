@@ -1,0 +1,11 @@
+{
+  "name": "destroy-ball-strategy-kit",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Student-safe starter-plus-examples repo for writing and testing destroy-ball energy-allocation strategies locally.",
+  "scripts": {
+    "run": "node scripts/run-strategy.js",
+    "test": "node --test"
+  },
+  "license": "MIT"
+}
