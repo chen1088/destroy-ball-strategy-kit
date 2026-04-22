@@ -2,9 +2,7 @@
 
 This is the public student repo for writing and testing `decide(context)` strategies for the current destroy-ball energy-allocation rules.
 
-It combines the safe starter project with a small examples pack, so students only need one repository.
-
-It does not include the classroom server, private routes, or admin UI. It only includes the strategy input shape, validation helpers, sample contexts, and reference strategies.
+Edit the `startegy.js`, change its name to `(Last_name)_(First_name)_(Student_number).js` and submit.
 
 ## Quick start
 
@@ -70,7 +68,3 @@ Rules:
   - spends more aggressively when trailing the room
 - `examples/same-hunter.js`
   - pushes compact high-value middle positions
-
-## Submission idea
-
-If your teacher asks for one file, you can usually just send `strategy.js`.
