@@ -62,7 +62,9 @@ Scoring:
 - If a middle ball is destroyed, its base score is `left x middle x right`.
 - If the first ball is destroyed, its base score is `self x right x right`.
 - If the last ball is destroyed, its base score is `left x left x self`.
-- A player's points for the round are `baseScore x energyPlacedOnDestroyedBall`.
+- A player's raw round points are `baseScore x energyPlacedOnDestroyedBall`.
+- If multiple players tie for the highest raw round points in that round, only those tied top scorers split that top payout evenly among themselves.
+- Players below the top raw round score keep their full raw round points.
 
 Endgame:
 
