@@ -43,6 +43,38 @@ Rules:
 - the total allocated energy cannot exceed `availableEnergy`
 - all-zero allocations are legal and mean the strategy is saving energy
 
+## Game rules
+
+Each game starts with a line of balls. Duplicate values are allowed.
+
+Round flow while at least `4` balls remain:
+
+1. Every player chooses how to distribute integer energy across the current line.
+2. The ball with the highest total allocated energy is destroyed.
+3. If multiple balls tie for the highest positive total energy, the leftmost tied ball is destroyed.
+4. If everyone allocates `0`, the leftmost ball is destroyed by default.
+5. Energy placed on the destroyed ball is consumed.
+6. Energy placed on surviving balls is returned to the player.
+7. Whenever a ball is destroyed, every player gains `+1` energy after recycling.
+
+Scoring:
+
+- If a middle ball is destroyed, its base score is `left x middle x right`.
+- If the first ball is destroyed, its base score is `self x right x right`.
+- If the last ball is destroyed, its base score is `left x left x self`.
+- A player's points for the round are `baseScore x energyPlacedOnDestroyedBall`.
+
+Endgame:
+
+- When exactly `3` balls remain, the game automatically ends with a final scoring step.
+- In that final step, every player spends all remaining energy.
+- The final base score is the product of the three remaining ball values.
+
+Starting state:
+
+- Players start with `0` points and `5` energy.
+- `lineScores` in the strategy context already gives the current base score for each ball.
+
 ## Repository layout
 
 - `strategy.js`
