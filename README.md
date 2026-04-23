@@ -22,19 +22,67 @@ npm run run -- examples/momentum-reader.js
 
 ## What your strategy receives
 
-`decide(context)` gets:
+`decide(context)` gets an object with this shape:
 
 ```js
 {
-  roundNumber,
-  line,
-  lineScores,
-  availableEnergy,
-  player,
-  players,
-  history
+  roundNumber: 4,                // integer, starts at 1
+  line: [8, 2, 11, 6, 3],        // number[]
+  lineScores: [32, 176, 132, 198, 54], // number[], same length as line
+  availableEnergy: 4,            // integer >= 0
+  timerSeconds: 45,              // optional in local sample contexts
+  roomMode: 'classroom',         // optional in local sample contexts: 'classroom' | 'normal'
+  player: {
+    id: 'cpu-1',                 // string
+    name: 'Pressure Popper',     // string
+    points: 18,                  // number
+    energy: 4,                   // integer >= 0
+    kind: 'cpu',                 // 'cpu' | 'human'
+    strategyId: 'momentum-reader',      // optional: string | null
+    strategyName: 'Momentum Reader',    // optional: string | null
+    strategyFile: 'momentum-reader.js'  // optional: string | null
+  },
+  players: [
+    {
+      id: 'cpu-1',
+      name: 'Pressure Popper',
+      points: 18,
+      energy: 4,
+      kind: 'cpu',
+      strategyId: 'momentum-reader',
+      strategyName: 'Momentum Reader',
+      strategyFile: 'momentum-reader.js'
+    }
+  ],
+  history: [
+    {
+      roundNumber: 3,            // integer, newest round first
+      roundType: 'destroy',      // 'destroy' | 'final'
+      didDestroy: true,          // boolean
+      destroyedPosition: 2,      // integer | null, 1-based
+      destroyedValue: 11,        // integer | null
+      baseScore: 176,            // number | null
+      totalEnergySpent: 6,       // integer
+      lineBefore: [8, 2, 11, 6, 3],
+      lineAfter: [8, 2, 6, 3],
+      energyTotals: [0, 1, 4, 1, 0], // number[] | null
+      autoFinalBaseScore: null,  // number | null
+      didAutoFinal: false        // boolean
+    }
+  ]
 }
 ```
+
+Field notes:
+
+- `roundNumber` is 1-based.
+- `line[i]` and `lineScores[i]` describe the same ball position.
+- `availableEnergy` is the maximum total energy your strategy may spend this round. In live games it matches `player.energy`.
+- `player` is the current strategy's own player snapshot.
+- `players` is the full room roster, including the current player.
+- `history` is ordered newest first.
+- The local examples in `src/sample-contexts.js` use the core fields only. Live game contexts also include `timerSeconds`, `roomMode`, full `history` entries, and CPU strategy metadata fields.
+- Your strategy should read only the fields it needs and tolerate extra fields being added later.
 
 Rules:
 
