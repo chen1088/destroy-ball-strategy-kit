@@ -6,6 +6,7 @@ module.exports = [
       line: [5, 1, 4, 9],
       lineScores: [25, 20, 36, 81],
       availableEnergy: 5,
+      maxEnergy: 8,
       player: {
         id: 'student-01',
         name: 'Student 01',
@@ -28,6 +29,7 @@ module.exports = [
       line: [8, 2, 11, 6, 3],
       lineScores: [32, 176, 132, 198, 54],
       availableEnergy: 4,
+      maxEnergy: 8,
       player: {
         id: 'student-01',
         name: 'Student 01',
@@ -53,6 +55,7 @@ module.exports = [
       line: [3, 10, 5, 7],
       lineScores: [300, 150, 350, 245],
       availableEnergy: 2,
+      maxEnergy: 8,
       player: {
         id: 'student-01',
         name: 'Student 01',

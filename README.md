@@ -32,6 +32,7 @@ npm run run -- examples/momentum-reader.js
   line: [8, 2, 11, 6, 3],        // number[]
   lineScores: [32, 176, 132, 198, 54], // number[], same length as line
   availableEnergy: 4,            // integer >= 0
+  maxEnergy: 8,                  // integer >= 0
   timerSeconds: 45,              // optional in local sample contexts
   roomMode: 'classroom',         // optional in local sample contexts: 'classroom' | 'normal'
   player: {
@@ -80,10 +81,11 @@ Field notes:
 - `roundNumber` is 1-based.
 - `line[i]` and `lineScores[i]` describe the same ball position.
 - `availableEnergy` is the maximum total energy your strategy may spend this round. In live games it matches `player.energy`.
+- `maxEnergy` is the room's current energy cap for round-end energy.
 - `player` is the current strategy's own player snapshot.
 - `players` is the full room roster, including the current player.
 - `history` is ordered newest first.
-- The local examples in `src/sample-contexts.js` use the core fields only. Live game contexts also include `timerSeconds`, `roomMode`, full `history` entries, and CPU strategy metadata fields.
+- The local examples in `src/sample-contexts.js` use the core fields only. Live game contexts also include `maxEnergy`, `timerSeconds`, `roomMode`, full `history` entries, and CPU strategy metadata fields.
 - Your strategy should read only the fields it needs and tolerate extra fields being added later.
 
 Rules:
@@ -106,6 +108,8 @@ Round flow while at least `4` balls remain:
 5. Energy placed on the destroyed ball is consumed.
 6. Energy placed on surviving balls is returned to the player.
 7. Whenever a ball is destroyed, every player gains `+1` energy after recycling.
+8. Survival Master: if a player placed `0` energy on the destroyed ball, they gain `+1` extra energy for each surviving ball where they were the untied highest bidder.
+9. A room can also cap energy growth with `maxEnergy`.
 
 Scoring:
 
@@ -125,6 +129,7 @@ Endgame:
 Starting state:
 
 - Players start with `0` points and `5` energy.
+- Standard rooms currently default to a `maxEnergy` cap of `8`, but rooms may choose a different cap.
 - `lineScores` in the strategy context already gives the current base score for each ball.
 
 ## Repository layout
