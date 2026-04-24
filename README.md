@@ -2,7 +2,7 @@
 
 This is the public student repo for writing and testing `decide(context)` strategies for the current destroy-ball energy-allocation rules.
 
-Edit the `startegy.js`, change its name to `(Last_name)_(First_name)_(Student_number).js` and submit.
+Edit `strategy.js` while you are developing locally. When you are ready to submit, copy or rename your final file to `(Last_name)_(First_name)_(Student_number).js`.
 
 ## Quick start
 
@@ -13,6 +13,8 @@ npm test
 ```
 
 Edit `strategy.js`, then run the sample scenarios again.
+
+Keep the local working file named `strategy.js` if you want `npm run run` and `npm test` to keep using the default starter path.
 
 To try an included example strategy:
 
