@@ -9,6 +9,7 @@ Edit `strategy.js` while you are developing locally. When you are ready to submi
 ```bash
 npm install
 npm run run
+npm run benchmark
 npm test
 ```
 
@@ -21,6 +22,39 @@ To try an included example strategy:
 ```bash
 npm run run -- examples/momentum-reader.js
 ```
+
+## Benchmark your strategy
+
+To estimate how effective your strategy is, run it against the bundled example strategies on a fixed line bank:
+
+```bash
+npm run benchmark
+```
+
+That command compares `strategy.js` against the example strategies and prints:
+
+- wins
+- average rank
+- average points
+- runtime errors
+
+You can benchmark a different file too:
+
+```bash
+npm run benchmark -- examples/momentum-reader.js
+```
+
+You can also change how many benchmark games are played:
+
+```bash
+npm run benchmark -- strategy.js --games 24
+```
+
+Notes:
+
+- The benchmark uses the same current scoring and energy rules as the kit documentation.
+- It uses a bundled fixed line bank so repeated runs are comparable.
+- It is a local estimate against the included baselines, not the official classroom grader.
 
 ## What your strategy receives
 
@@ -138,8 +172,12 @@ Starting state:
   - your editable starter strategy
 - `examples/`
   - reference strategies you can read, run, copy, or remix
+- `scripts/benchmark-strategy.js`
+  - benchmarks your strategy against the bundled example strategies
 - `src/sample-contexts.js`
   - sample rounds used by the local runner and tests
+- `src/benchmark-sdk.js`
+  - local benchmark simulation and standings logic
 - `src/strategy-sdk.js`
   - shared validation and execution helpers
 - `scripts/run-strategy.js`
@@ -148,6 +186,8 @@ Starting state:
   - checks that `strategy.js` always returns legal allocations
 - `test/example-strategies.test.js`
   - checks that every included example is also legal
+- `test/benchmark.test.js`
+  - checks that the local benchmark returns standings and supports custom strategy files
 
 ## Included example strategies
 
