@@ -71,23 +71,23 @@ Notes:
   roomMode: 'classroom',         // optional in local sample contexts: 'classroom' | 'normal'
   player: {
     id: 'cpu-1',                 // string
-    name: 'Pressure Popper',     // string
+    name: 'Sample Strategy',     // string
     points: 18,                  // number
     energy: 4,                   // integer >= 0
     kind: 'cpu',                 // 'cpu' | 'human'
     strategyId: 'momentum-reader',      // optional: string | null
-    strategyName: 'Momentum Reader',    // optional: string | null
+    strategyName: 'Sample Strategy',    // optional: string | null
     strategyFile: 'momentum-reader.js'  // optional: string | null
   },
   players: [
     {
       id: 'cpu-1',
-      name: 'Pressure Popper',
+      name: 'Sample Strategy',
       points: 18,
       energy: 4,
       kind: 'cpu',
       strategyId: 'momentum-reader',
-      strategyName: 'Momentum Reader',
+      strategyName: 'Sample Strategy',
       strategyFile: 'momentum-reader.js'
     }
   ],

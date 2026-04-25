@@ -13,8 +13,8 @@ function hashString(input) {
 }
 
 module.exports = {
-  name: 'Momentum Reader',
-  description: 'Uses line scores, available energy, player standing, and recent history to pressure key balls.',
+  name: 'Sample Strategy',
+  description: 'Sample strategy showing how to use line scores, available energy, player standing, and recent history.',
   decide(context) {
     const {
       roundNumber = 1,
