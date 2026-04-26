@@ -50,10 +50,25 @@ You can also change how many benchmark games are played:
 npm run benchmark -- strategy.js --games 24
 ```
 
+You can set the starting ball count for a deterministic generated line bank:
+
+```bash
+npm run benchmark -- strategy.js --balls 20
+```
+
+And you can choose the benchmark energy cap:
+
+```bash
+npm run benchmark -- strategy.js --max-energy balls
+npm run benchmark -- strategy.js --max-energy 8
+```
+
 Notes:
 
 - The benchmark uses the same current scoring and energy rules as the kit documentation.
-- It uses a bundled fixed line bank so repeated runs are comparable.
+- By default it uses a bundled fixed line bank so repeated runs are comparable.
+- `--balls <n>` swaps in a deterministic generated bank with that many starting balls.
+- `--max-energy balls` caps each game at its starting ball count, floored at the starting energy; `--max-energy 8` uses a fixed cap.
 - It is a local estimate against the included baselines, not the official classroom grader.
 
 ## What your strategy receives
@@ -164,6 +179,7 @@ Starting state:
 
 - Players start with `0` points and `5` energy.
 - Standard rooms currently default to a `maxEnergy` cap of `8`, but rooms may choose a different cap.
+- Local benchmarks default to a cap equal to the game's starting ball count, floored at the starting energy.
 - `lineScores` in the strategy context already gives the current base score for each ball.
 
 ## Repository layout

@@ -7,18 +7,51 @@ function printUsage() {
   npm run benchmark
   npm run benchmark -- [strategy-file]
   npm run benchmark -- [strategy-file] --games 24
+  npm run benchmark -- [strategy-file] --balls 12
+  npm run benchmark -- [strategy-file] --max-energy balls
 
 Examples:
   npm run benchmark
   npm run benchmark -- strategy.js
   npm run benchmark -- examples/momentum-reader.js --games 24
+  npm run benchmark -- strategy.js --balls 20 --max-energy balls
 `);
+}
+
+function parsePositiveInteger(value, label) {
+  const parsed = Number(value);
+  if (!Number.isInteger(parsed) || parsed <= 0) {
+    throw new Error(`${label} must be a positive integer`);
+  }
+
+  return parsed;
+}
+
+function parseMaxEnergyOption(value) {
+  const normalized = String(value || '').trim().toLowerCase();
+  const startingBallsAliases = new Set([
+    'balls',
+    'ball',
+    'ball-count',
+    'starting-balls',
+    'starting-ball-count',
+    'line',
+    'line-length'
+  ]);
+
+  if (startingBallsAliases.has(normalized)) {
+    return 'starting-balls';
+  }
+
+  return parsePositiveInteger(value, '--max-energy');
 }
 
 function parseArgs(argv) {
   const options = {
     targetPath: path.resolve(__dirname, '..', 'strategy.js'),
-    gameCount: null
+    gameCount: null,
+    ballCount: null,
+    maxEnergy: null
   };
 
   for (let index = 0; index < argv.length; index += 1) {
@@ -34,12 +67,27 @@ function parseArgs(argv) {
         throw new Error('Missing value for --games');
       }
 
-      const parsed = Number(argv[index + 1]);
-      if (!Number.isInteger(parsed) || parsed <= 0) {
-        throw new Error('--games must be a positive integer');
+      options.gameCount = parsePositiveInteger(argv[index + 1], '--games');
+      index += 1;
+      continue;
+    }
+
+    if (argument === '--balls') {
+      if (index + 1 >= argv.length) {
+        throw new Error('Missing value for --balls');
       }
 
-      options.gameCount = parsed;
+      options.ballCount = parsePositiveInteger(argv[index + 1], '--balls');
+      index += 1;
+      continue;
+    }
+
+    if (argument === '--max-energy') {
+      if (index + 1 >= argv.length) {
+        throw new Error('Missing value for --max-energy');
+      }
+
+      options.maxEnergy = parseMaxEnergyOption(argv[index + 1]);
       index += 1;
       continue;
     }
@@ -59,6 +107,24 @@ function formatStanding(entry, placement) {
   return `${placement}. ${entry.strategyName} (${entry.fileName})\n   ${entry.wins} wins | avg rank ${entry.averageRank} | ${entry.averagePoints} avg pts | ${entry.runtimeErrors} runtime errors${marker}`;
 }
 
+function formatBenchmarkLineSource(options) {
+  if (options.lineSource === 'generated' && options.ballCount) {
+    return `${options.lineBankSize}-line generated ${options.ballCount}-ball bank`;
+  }
+
+  return `fixed ${options.lineBankSize}-line bank`;
+}
+
+function formatMaxEnergy(options) {
+  if (options.maxEnergyDescription) {
+    return options.maxEnergyDescription;
+  }
+
+  return options.maxEnergyMode === 'starting-balls'
+    ? 'starting balls per game'
+    : String(options.maxEnergy);
+}
+
 function main() {
   const options = parseArgs(process.argv.slice(2));
 
@@ -69,7 +135,9 @@ function main() {
 
   const benchmark = runStrategyBenchmark({
     targetPath: options.targetPath,
-    gameCount: options.gameCount == null ? undefined : options.gameCount
+    gameCount: options.gameCount == null ? undefined : options.gameCount,
+    ballCount: options.ballCount == null ? undefined : options.ballCount,
+    maxEnergy: options.maxEnergy == null ? undefined : options.maxEnergy
   });
 
   const baselineCount = Math.max(0, benchmark.strategies.length - 1);
@@ -78,7 +146,8 @@ function main() {
     : path.basename(options.targetPath);
 
   console.log(`Benchmarking ${targetLabel}`);
-  console.log(`Against ${baselineCount} bundled baseline strateg${baselineCount === 1 ? 'y' : 'ies'} across ${benchmark.options.gameCount} games from a fixed ${benchmark.options.lineBankSize}-line bank.`);
+  console.log(`Against ${baselineCount} bundled baseline strateg${baselineCount === 1 ? 'y' : 'ies'} across ${benchmark.options.gameCount} games from a ${formatBenchmarkLineSource(benchmark.options)}.`);
+  console.log(`Energy: start ${benchmark.options.startingEnergy}, cap ${formatMaxEnergy(benchmark.options)}.`);
   console.log('');
   console.log('Standings');
   console.log('---------');

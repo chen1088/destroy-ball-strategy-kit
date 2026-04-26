@@ -11,10 +11,25 @@ const DEFAULT_TARGET_PATH = path.join(DEFAULT_PROJECT_ROOT, 'strategy.js');
 const DEFAULT_BASELINES_DIRECTORY = path.join(DEFAULT_PROJECT_ROOT, 'examples');
 const DEFAULT_STARTING_ENERGY = 5;
 const DEFAULT_MAX_ENERGY = 8;
+const DEFAULT_MAX_ENERGY_MODE = 'starting-balls';
+const DEFAULT_BALL_COUNT = 7;
+const DEFAULT_MIN_BALL_COUNT = 4;
+const DEFAULT_MAX_BALL_COUNT = 1000;
+const DEFAULT_GENERATED_LINE_COUNT = 12;
 const DEFAULT_TIMER_SECONDS = 45;
 const DEFAULT_MAX_ROUNDS = 60;
 const DEFAULT_PASS_LIMIT = 12;
+const MAX_FIXED_MAX_ENERGY = 99;
 const HISTORY_LIMIT = 8;
+const STARTING_BALLS_MAX_ENERGY_ALIASES = new Set([
+  'balls',
+  'ball',
+  'ball-count',
+  'starting-balls',
+  'starting-ball-count',
+  'line',
+  'line-length'
+]);
 const DEFAULT_BENCHMARK_LINES = Object.freeze([
   Object.freeze([5, 1, 4, 9]),
   Object.freeze([8, 2, 11, 6, 3]),
@@ -36,6 +51,91 @@ function clampInteger(value, minimum, maximum, fallback) {
   }
 
   return Math.max(minimum, Math.min(maximum, Math.floor(Number(value))));
+}
+
+function isStartingBallsMaxEnergy(value) {
+  if (value == null) {
+    return false;
+  }
+
+  return STARTING_BALLS_MAX_ENERGY_ALIASES.has(String(value).trim().toLowerCase());
+}
+
+function normalizeFixedMaxEnergy(value, startingEnergy) {
+  return clampInteger(
+    value,
+    startingEnergy,
+    MAX_FIXED_MAX_ENERGY,
+    Math.max(DEFAULT_MAX_ENERGY, startingEnergy)
+  );
+}
+
+function createStartingBallsMaxEnergySetting() {
+  return {
+    mode: DEFAULT_MAX_ENERGY_MODE,
+    value: null,
+    label: 'starting balls',
+    description: 'starting balls per game (minimum starting energy)'
+  };
+}
+
+function createFixedMaxEnergySetting(value, startingEnergy) {
+  const fixedValue = normalizeFixedMaxEnergy(value, startingEnergy);
+
+  return {
+    mode: 'fixed',
+    value: fixedValue,
+    label: String(fixedValue),
+    description: String(fixedValue)
+  };
+}
+
+function normalizeBenchmarkMaxEnergySetting(rawOptions, startingEnergy) {
+  const rawMode = rawOptions.maxEnergyMode == null ? '' : String(rawOptions.maxEnergyMode).trim().toLowerCase();
+
+  if (isStartingBallsMaxEnergy(rawMode)) {
+    return createStartingBallsMaxEnergySetting();
+  }
+
+  if (rawMode === 'fixed') {
+    return createFixedMaxEnergySetting(rawOptions.maxEnergy, startingEnergy);
+  }
+
+  if (rawOptions.maxEnergy == null || rawOptions.maxEnergy === '') {
+    return createStartingBallsMaxEnergySetting();
+  }
+
+  if (isStartingBallsMaxEnergy(rawOptions.maxEnergy)) {
+    return createStartingBallsMaxEnergySetting();
+  }
+
+  return createFixedMaxEnergySetting(rawOptions.maxEnergy, startingEnergy);
+}
+
+function resolveBenchmarkMaxEnergy(options, startingLineLength) {
+  if (options.maxEnergyMode === DEFAULT_MAX_ENERGY_MODE) {
+    return Math.max(
+      options.startingEnergy,
+      Math.floor(Number(startingLineLength)) || options.startingEnergy
+    );
+  }
+
+  return options.maxEnergy;
+}
+
+function inferDefaultMaxRounds(lines, passLimit) {
+  const largestStartingLineLength = lines.reduce((largest, line) => Math.max(largest, line.length), 0);
+  const completionBudget = Math.max(1, largestStartingLineLength - 3) + Math.max(1, passLimit);
+
+  return Math.max(DEFAULT_MAX_ROUNDS, completionBudget);
+}
+
+function createDeterministicBenchmarkLines(ballCount, lineCount = DEFAULT_GENERATED_LINE_COUNT) {
+  return Array.from({ length: lineCount }, (_, gameIndex) => {
+    return Array.from({ length: ballCount }, (_, ballIndex) => {
+      return ((gameIndex * 5 + ballIndex * 7 + ballIndex * gameIndex + 4) % 15) + 1;
+    });
+  });
 }
 
 function roundPointsAmount(value) {
@@ -396,15 +496,24 @@ function normalizeBenchmarkOptions(rawOptions = {}) {
   const projectRoot = rawOptions.projectRoot
     ? path.resolve(rawOptions.projectRoot)
     : DEFAULT_PROJECT_ROOT;
+  const usesExplicitBallCount = rawOptions.ballCount != null;
+  const ballCount = clampInteger(rawOptions.ballCount, DEFAULT_MIN_BALL_COUNT, DEFAULT_MAX_BALL_COUNT, DEFAULT_BALL_COUNT);
   const lines = Array.isArray(rawOptions.lines) && rawOptions.lines.length > 0
     ? rawOptions.lines.map((line, index) => validateBenchmarkLine(line, `lines[${index}]`))
-    : DEFAULT_BENCHMARK_LINES.map((line, index) => validateBenchmarkLine(line, `defaultLines[${index}]`));
+    : usesExplicitBallCount
+      ? createDeterministicBenchmarkLines(ballCount).map((line, index) => validateBenchmarkLine(line, `generatedLines[${index}]`))
+      : DEFAULT_BENCHMARK_LINES.map((line, index) => validateBenchmarkLine(line, `defaultLines[${index}]`));
+  const lineSource = Array.isArray(rawOptions.lines) && rawOptions.lines.length > 0
+    ? 'custom'
+    : usesExplicitBallCount
+      ? 'generated'
+      : 'default-bank';
   const gameCount = clampInteger(rawOptions.gameCount, 1, 5000, lines.length);
   const startingEnergy = clampInteger(rawOptions.startingEnergy, 1, 99, DEFAULT_STARTING_ENERGY);
-  const maxEnergy = clampInteger(rawOptions.maxEnergy, startingEnergy, 99, Math.max(DEFAULT_MAX_ENERGY, startingEnergy));
+  const maxEnergySetting = normalizeBenchmarkMaxEnergySetting(rawOptions, startingEnergy);
   const timerSeconds = clampInteger(rawOptions.timerSeconds, 1, 300, DEFAULT_TIMER_SECONDS);
-  const maxRounds = clampInteger(rawOptions.maxRounds, 1, 5000, DEFAULT_MAX_ROUNDS);
   const passLimit = clampInteger(rawOptions.passLimit, 1, 100, DEFAULT_PASS_LIMIT);
+  const maxRounds = clampInteger(rawOptions.maxRounds, 1, 5000, inferDefaultMaxRounds(lines, passLimit));
 
   return {
     projectRoot,
@@ -414,9 +523,14 @@ function normalizeBenchmarkOptions(rawOptions = {}) {
       : DEFAULT_BASELINES_DIRECTORY,
     baselinePaths: Array.isArray(rawOptions.baselinePaths) ? [...rawOptions.baselinePaths] : [],
     lines,
+    lineSource,
+    ballCount: usesExplicitBallCount ? ballCount : null,
     gameCount,
     startingEnergy,
-    maxEnergy,
+    maxEnergy: maxEnergySetting.value,
+    maxEnergyMode: maxEnergySetting.mode,
+    maxEnergyLabel: maxEnergySetting.label,
+    maxEnergyDescription: maxEnergySetting.description,
     timerSeconds,
     maxRounds,
     passLimit
@@ -438,13 +552,14 @@ function createBenchmarkLine(options, gameIndex) {
   return [...options.lines[gameIndex % options.lines.length]];
 }
 
-function summarizeGame(leaderboard, runtimeErrors, gameIndex, roundCount, line, startingLine, completed, stalledReason) {
+function summarizeGame(leaderboard, runtimeErrors, gameIndex, roundCount, line, startingLine, maxEnergy, completed, stalledReason) {
   return {
     gameNumber: gameIndex + 1,
     roundsPlayed: roundCount,
     completed,
     stalledReason: stalledReason || null,
     startingLine: [...startingLine],
+    maxEnergy,
     remainingLine: [...line],
     leaderboard: leaderboard.map((entry) => Object.assign({}, entry)),
     runtimeErrors: runtimeErrors.map((entry) => Object.assign({}, entry))
@@ -455,6 +570,7 @@ function runBenchmarkGame(strategies, options, gameIndex) {
   let players = createBenchmarkPlayers(strategies, options.startingEnergy);
   let line = createBenchmarkLine(options, gameIndex);
   const startingLine = [...line];
+  const gameMaxEnergy = resolveBenchmarkMaxEnergy(options, startingLine.length);
   let history = [];
   let roundNumber = 1;
   let consecutivePasses = 0;
@@ -497,7 +613,7 @@ function runBenchmarkGame(strategies, options, gameIndex) {
           line: [...line],
           lineScores: [...lineScores],
           availableEnergy: player.energy,
-          maxEnergy: options.maxEnergy,
+          maxEnergy: gameMaxEnergy,
           timerSeconds: options.timerSeconds,
           roomMode: 'benchmark',
           player: {
@@ -549,7 +665,7 @@ function runBenchmarkGame(strategies, options, gameIndex) {
       submissions,
       resolution,
       energyReward: 1,
-      maxEnergy: options.maxEnergy
+      maxEnergy: gameMaxEnergy
     });
 
     players = settlement.updatedPlayers;
@@ -574,7 +690,7 @@ function runBenchmarkGame(strategies, options, gameIndex) {
     consecutivePasses = resolution.totalEnergySpent === 0 ? consecutivePasses + 1 : 0;
     if (consecutivePasses >= options.passLimit) {
       const leaderboard = rankPointsLeaderboard(players);
-      return summarizeGame(leaderboard, runtimeErrors, gameIndex, roundNumber, line, startingLine, false, 'pass-limit');
+      return summarizeGame(leaderboard, runtimeErrors, gameIndex, roundNumber, line, startingLine, gameMaxEnergy, false, 'pass-limit');
     }
 
     roundNumber += 1;
@@ -584,7 +700,7 @@ function runBenchmarkGame(strategies, options, gameIndex) {
   const leaderboard = rankPointsLeaderboard(players);
   const stalledReason = completed ? null : 'max-rounds';
 
-  return summarizeGame(leaderboard, runtimeErrors, gameIndex, roundNumber - 1, line, startingLine, completed, stalledReason);
+  return summarizeGame(leaderboard, runtimeErrors, gameIndex, roundNumber - 1, line, startingLine, gameMaxEnergy, completed, stalledReason);
 }
 
 function createStandingAccumulator(strategy) {
@@ -677,8 +793,13 @@ function runStrategyBenchmark(rawOptions = {}) {
     options: {
       gameCount: options.gameCount,
       lineBankSize: options.lines.length,
+      lineSource: options.lineSource,
+      ballCount: options.ballCount,
       startingEnergy: options.startingEnergy,
       maxEnergy: options.maxEnergy,
+      maxEnergyMode: options.maxEnergyMode,
+      maxEnergyLabel: options.maxEnergyLabel,
+      maxEnergyDescription: options.maxEnergyDescription,
       timerSeconds: options.timerSeconds,
       maxRounds: options.maxRounds,
       passLimit: options.passLimit

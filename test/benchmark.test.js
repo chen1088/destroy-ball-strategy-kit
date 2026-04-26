@@ -78,3 +78,50 @@ test('runStrategyBenchmark can compare a custom target strategy against a baseli
     assert.equal(result.target.placement, 1);
   });
 });
+
+test('runStrategyBenchmark supports generated ball-count lines and starting-ball max energy', () => {
+  withTempStrategyProject(({ projectRoot }) => {
+    const examplesDirectory = path.join(projectRoot, 'examples');
+    fs.mkdirSync(examplesDirectory, { recursive: true });
+
+    const targetPath = path.join(projectRoot, 'strategy.js');
+    const baselinePath = path.join(examplesDirectory, 'last-ball.js');
+
+    fs.writeFileSync(targetPath, `
+      module.exports = {
+        name: 'First Ball',
+        decide(context) {
+          return {
+            allocations: context.line.map((_, index) => (index === 0 ? context.availableEnergy : 0))
+          };
+        }
+      };
+    `);
+
+    fs.writeFileSync(baselinePath, `
+      module.exports = {
+        name: 'Last Ball',
+        decide(context) {
+          return {
+            allocations: context.line.map((_, index) => (index === context.line.length - 1 ? context.availableEnergy : 0))
+          };
+        }
+      };
+    `);
+
+    const result = runStrategyBenchmark({
+      projectRoot,
+      targetPath,
+      baselinePaths: [baselinePath],
+      ballCount: 9,
+      gameCount: 1,
+      maxEnergy: 'balls'
+    });
+
+    assert.equal(result.options.lineSource, 'generated');
+    assert.equal(result.options.ballCount, 9);
+    assert.equal(result.options.maxEnergyMode, 'starting-balls');
+    assert.equal(result.games[0].startingLine.length, 9);
+    assert.equal(result.games[0].maxEnergy, 9);
+  });
+});
